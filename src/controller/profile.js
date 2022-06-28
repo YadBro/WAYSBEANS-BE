@@ -1,5 +1,5 @@
 const { profile, user }   = require("../../models");
-const { badRequestCode, success, internalServerCode } = require("../statuscode");
+const { badRequestCode, success, internalServerCode, notFoundCode } = require("../statuscode");
 const Joi       = require("joi");
 const fs        = require("fs");
 const fsPromise = require("fs/promises");
