@@ -143,7 +143,7 @@ exports.addProduct  = async (req, res) => {
         });
 
     } catch (error) {
-
+        console.log(error);
         res.status(internalServerCode.statusCode).send({
             status  : error.name,
             data    : {},
