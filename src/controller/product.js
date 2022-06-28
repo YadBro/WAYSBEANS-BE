@@ -14,7 +14,7 @@ let data;
 
 exports.getProducts = async (req, res) => {
     try {
-
+        console.log(product)
         const data  = await product.findAll({
             include     : {
                 model   : user,
@@ -41,6 +41,7 @@ exports.getProducts = async (req, res) => {
         });
 
     } catch (error) {
+        console.log(error)
 
         res.status(internalServerCode.statusCode).send({
             status  : error.name,

@@ -183,7 +183,6 @@ exports.checkAuth   = async (req, res) => {
                 idUser  : userId
             }
         });
-        const {image}    = profileData;
 
         if (response) {
             responseCode    = success.statusCode;
