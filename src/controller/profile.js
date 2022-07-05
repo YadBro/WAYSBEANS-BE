@@ -1,8 +1,9 @@
 const { profile, user }   = require("../../models");
 const { badRequestCode, success, internalServerCode, notFoundCode } = require("../statuscode");
-const Joi       = require("joi");
-const fs        = require("fs");
-const fsPromise = require("fs/promises");
+const Joi           = require("joi");
+const fs            = require("fs");
+const fsPromise     = require("fs/promises");
+const cloudinary    = require("../utils/cloudinary");
 
 
 let status;
@@ -59,13 +60,27 @@ exports.profileUpdate    = async (req, res) => {
             }else {
                 reqBody?.fullname && await user.update({fullname : value?.fullname}, {where  : {id : IdUser}});
                 delete value?.fullname;
-                value?.image === undefined && delete value?.image;
-
-                const existImage    = fs.existsSync("uploads/" + checkProfile?.image);
-
-                if (existImage && image !== undefined && checkProfile?.image !== "MASTAMPAN.png") {
-                    await fsPromise.unlink("uploads/" + checkProfile?.image);
+                if(value?.image !== undefined){
+                    const cloudImage = await cloudinary.uploader.upload(req.file.path, {
+                        folder: "waysbeans/profile-photos",
+                        use_filename: true,
+                        unique_filename: false
+                    });
+                    value = {
+                        ...value,
+                        image: cloudImage.public_id
+                    }
+                    await fsPromise.unlink("uploads/" + image);
+                }else if(value?.image === undefined){
+                    delete value?.image;
                 }
+
+                // const existImage    = fs.existsSync("uploads/" + checkProfile?.image);
+                // existImage && image await fsPromise.unlink("uploads/" + checkProfile?.image);
+
+                // if (existImage && image !== undefined && checkProfile?.image !== "MASTAMPAN.png") {
+                    // await fsPromise.unlink("uploads/" + checkProfile?.image);
+                // }
                 const newProfileUpdate  = await profile.update(value, {
                     where   : {
                         idUser  : idUserParams
@@ -88,7 +103,7 @@ exports.profileUpdate    = async (req, res) => {
         });
 
     } catch (error) {
-
+        console.log(error);
         res.status(internalServerCode.statusCode).send({
             status  : error.name,
             data    : {},

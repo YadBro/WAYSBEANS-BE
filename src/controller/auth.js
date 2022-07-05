@@ -1,9 +1,8 @@
 const { user, profile }  = require("../../models");
 const { success, badRequestCode, conflictCode, internalServerCode, notFoundCode, unAuthorizeCode }   = require("../statuscode/index");
-const Joi       = require("joi");
-const bcrypt    = require("bcrypt");
-const jwt       = require("jsonwebtoken");
-
+const Joi           = require("joi");
+const bcrypt        = require("bcrypt");
+const jwt           = require("jsonwebtoken");
 
 let status;
 let data;
@@ -63,7 +62,7 @@ exports.register    = async (req, res) => {
                 const newUser           = await user.create(value);
                 const newProfileUser    = await profile.create({
                     idUser  : newUser?.id,
-                    image   : 'MASTAMPAN.png'
+                    image   : 'https://res.cloudinary.com/drcdrbc2u/image/upload/v1656989800/waysbeans/profile-photos/default'
                 });
                 status          = success.statusData;
                 data            = value;
@@ -176,7 +175,7 @@ exports.checkAuth   = async (req, res) => {
         const response  = await user.findOne({
             where   : {
                 id  : userId
-            }
+            }   
         });
         const profileData   = await profile.findOne({
             where   : {

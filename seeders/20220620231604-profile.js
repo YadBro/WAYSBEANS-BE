@@ -13,7 +13,7 @@ module.exports = {
     */
     await queryInterface.bulkInsert('profiles', [{
       idUser: 1,
-      image: 'MASTAMPAN.png',
+      image: 'waysbeans/profile-photos/default',
       createdAt : '2022-06-21',
       updatedAt : '2022-06-21'
     }], {});

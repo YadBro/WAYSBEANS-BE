@@ -1,9 +1,9 @@
 const { product, user }    = require("../../models");
 const { badRequestCode, success, internalServerCode, notFoundCode }    = require("../statuscode/index");
-const Joi   = require("joi");
-const fs    = require("fs");
-const fsPromise = require("fs/promises");
-
+const Joi           = require("joi");
+const fs            = require("fs");
+const fsPromise     = require("fs/promises");
+const cloudinary    = require("../utils/cloudinary");
 
 let status;
 let responseCode;
@@ -14,7 +14,6 @@ let data;
 
 exports.getProducts = async (req, res) => {
     try {
-        console.log(product)
         const data  = await product.findAll({
             include     : {
                 model   : user,
@@ -123,9 +122,23 @@ exports.addProduct  = async (req, res) => {
             status          = validate.error.name;
             data            = value;
             message         = validate.error.message;
+            const imageExist  = fs.existsSync("uploads/" + image);
+            if (imageExist){
+                await fsPromise.unlink("uploads/" + image);
+            }
         }else {
+            const newImage      = await cloudinary.uploader.upload(req.file.path, {
+                folder: "waysbeans/products",
+                use_filename: true,
+                unique_filename: false
+            });
+            const imageExist  = fs.existsSync("uploads/" + image);
+            if (imageExist){
+                await fsPromise.unlink("uploads/" + image);
+            }
             value   = {
                 ...value,
+                image: newImage.public_id,
                 idUser
             }
             const newProduct    = await product.create(value);
@@ -202,10 +215,30 @@ exports.updateProduct   = async (req, res) => {
                     const hapus = await fsPromise.unlink("uploads/" + value?.image);
                 }
             }else {
-                const oldImage  = fs.existsSync("uploads/" + oldProduct?.image);
-                if (image !== oldProduct?.image && image !== undefined && oldImage){
-                    const hapus = await fsPromise.unlink("uploads/" + oldProduct?.image);
+
+                const oldImageCloud = await cloudinary.api.resources_by_ids(oldProduct?.image);
+                // CLOUDINARY_PRODUCTS_FOLDER = waysbeans/products/
+                // 1656990812603-NICARAGUA_Beans.png di split jadi ['1656990812603-NICARAGUA_Beans', 'png']
+                // abis itu const newImage = waysbeans/products/1656990812603-NICARAGUA_Beans
+                let newImage = value?.image;
+                if (image !== undefined && oldImageCloud.resources[0].public_id !== process.env.CLOUDINARY_PRODUCTS_FOLDER + image.split('.')[0]){ // kalo ada image baru
+                    await cloudinary.uploader.upload(req.file.path, {
+                        public_id: oldImageCloud.resources[0].public_id,
+                        use_filename: true,
+                        unique_filename: false
+                    });
+                    cloudinary.uploader.rename(oldImageCloud.resources[0].public_id, process.env.CLOUDINARY_PRODUCTS_FOLDER + image.split('.')[0]);
+                    newImage = process.env.CLOUDINARY_PRODUCTS_FOLDER + image.split('.')[0];
+                    await fsPromise.unlink("uploads/" + value?.image);
                 }
+                value = {
+                    ...value,
+                    image: newImage
+                }
+                // const oldImage  = fs.existsSync("uploads/" + oldProduct?.image);
+                // if (image !== oldProduct?.image && image !== undefined && oldImage){
+                //     const hapus = await fsPromise.unlink("uploads/" + oldProduct?.image);
+                // }
 
                 const updateProduct = await product.update(value, {
                     where   : {
@@ -229,8 +262,10 @@ exports.updateProduct   = async (req, res) => {
         });
 
 
-    } catch (error) {
 
+
+    } catch (error) {
+        console.log(error);
         res.status(internalServerCode.statusCode).send({
             status  : error.name,
             data    : {},
@@ -243,14 +278,14 @@ exports.updateProduct   = async (req, res) => {
 
 exports.deleteProduct   = async (req, res) => {
     try {
-
         const id    = req.params.id;
-
+        
         const checkProduct   = await product.findOne({
             where   : {
                 id
             }
         });
+
 
         if (checkProduct === null){
             responseCode    = notFoundCode.statusCode;
@@ -259,8 +294,9 @@ exports.deleteProduct   = async (req, res) => {
             message         = "Product with id " + id + " it does'nt exist!";
         }else {
 
-            const imageProduct  = fs.existsSync("uploads/" + checkProduct?.image);
-            imageProduct && await fsPromise.unlink("uploads/" + checkProduct?.image);
+            // const imageProduct  = fs.existsSync("uploads/" + checkProduct?.image);
+            // imageProduct && await fsPromise.unlink("uploads/" + checkProduct?.image);
+            await cloudinary.api.delete_resources(checkProduct?.image);
             const deleteProduct = await product.destroy({
                 where   : {
                     id
