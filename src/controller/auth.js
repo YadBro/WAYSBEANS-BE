@@ -62,7 +62,7 @@ exports.register    = async (req, res) => {
                 const newUser           = await user.create(value);
                 const newProfileUser    = await profile.create({
                     idUser  : newUser?.id,
-                    image   : 'https://res.cloudinary.com/drcdrbc2u/image/upload/v1656989800/waysbeans/profile-photos/default'
+                    image   : 'waysbeans/profile-photos/default'
                 });
                 status          = success.statusData;
                 data            = value;
